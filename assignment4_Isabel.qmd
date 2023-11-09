@@ -168,16 +168,9 @@ dbGetQuery(con, sql)
 
 Try to write the very same query, now using the `dbplyr` package.
 
-**For this, you need to first map the `crime` table to a tibble object in R.**
+Start with the original crime table. Use LIMIT 100 to ensure the results object is manageable.
 
 ```{r}
-
-cri <- tbl(con, "crime")
-```
-
--   Start with the original crime table. Use LIMIT 100 to ensure the results object is manageable.
-
-```{r, eval = FALSE}
 
 sql <- "SELECT *
         FROM `crime`
@@ -191,19 +184,22 @@ subtable <- dbGetQuery(con, sql)
 str(subtable)
 ```
 
--   Try the above *without* limiting to 100 observations
+Try a more specific query, *without* limiting to 100 observations
 
-```{r, eval = FALSE}
+```{r}
 
-# Start with the original crime table
-sql <- "SELECT *
-        FROM `crime`"
+sql <- "SELECT year, primary_type, COUNTIF(arrest = TRUE) AS arrests
+        FROM `crime`
+        WHERE district = 11 
+        GROUP BY primary_type, year 
+        ORDER BY arrests DESC"
 
 dbGetQuery(con, sql)
 
-# Store the result as an object in our workspace using teh assignment operator
+# Store the result as an object in our workspace 
 
 crime_tibble <- dbGetQuery(con, sql)
+str(crime_tibble)
 ```
 
 Again, count the number of arrests grouped by `primary_type` of district 11 in year 2016, now using `dplyr` syntax.
@@ -211,10 +207,7 @@ Again, count the number of arrests grouped by `primary_type` of district 11 in y
 ```{r}
 
 crime_tibble %>%
-  filter(year == 2016 & district == 11) %>%
-  group_by(primary_type) %>%
-  summarise(arrest_count = n()) %>% 
-  arrange(desc(arrest_count))
+  filter(year == 2016) 
 
 ```
 
@@ -223,9 +216,6 @@ Count the number of arrests grouped by `primary_type` and `year`, still only for
 ```{r}
 
 crime_tibble %>%
-  filter(district == 11) %>%
-  group_by(primary_type, year) %>%
-  summarise(arrest_count = n()) %>%
   arrange(desc(year))
   
 ```
@@ -234,19 +224,15 @@ Assign the results of the query above to a local R object.
 
 ```{r}
 
-table1 <- crime_tibble %>%
-  filter(district == 11) %>%
-  group_by(primary_type, year) %>%
-  summarise(arrest_count = n()) %>%
+crime_tibble <- crime_tibble %>%
   arrange(desc(year))
-
 ```
 
 Confirm that you pulled the data to the local environment by displaying the first ten rows of the saved data set.
 
 ```{r}
 
-head(table1, 10)
+head(crime_tibble, 10)
 ```
 
 Close the connection.
